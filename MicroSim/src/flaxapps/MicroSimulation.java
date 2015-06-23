@@ -48,8 +48,9 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Hashtable;
@@ -89,6 +90,11 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import com.jogamp.opengl.util.FPSAnimator;
 
+import flaxapps.jogl_util.ModelControl;
+import flaxapps.jogl_util.Shader_Manager;
+import flaxapps.jogl_util.Vertex;
+
+
 /**
  * @author Danny Flax
  */
@@ -96,8 +102,8 @@ import com.jogamp.opengl.util.FPSAnimator;
 public class MicroSimulation implements GLEventListener, KeyListener {
 
 	private static String TITLE = "Team X-5 Microfluidics Experiment Simulation";
-	private static final int CANVAS_WIDTH = 640; // width of the drawable
-	private static final int CANVAS_HEIGHT = 700; // height of the drawable
+	private static int CANVAS_WIDTH = 640; // width of the drawable
+	private static int CANVAS_HEIGHT = 700; // height of the drawable
 	private static final int FPS = 100; // animator's target frames per second
 	final static JFrame frame = new JFrame();
 	
@@ -167,6 +173,16 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 
 	/** The entry main() method */
 	public static void main(String[] args) {
+		if(args.length == 2){
+			CANVAS_WIDTH = Integer.parseInt(args[0]);
+			CANVAS_HEIGHT = Integer.parseInt(args[1]);
+		}
+		else{
+			Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+			CANVAS_WIDTH = screenSize.width/2;
+			CANVAS_HEIGHT = screenSize.height;
+		}
+
 		// Create the OpenGL rendering canvas
 		canvas = new GLCanvas(); // heavy-weight GLCanvas
 
@@ -185,13 +201,13 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 
 		// Create the top-level container frame
 		// Swing's JFrame or AWT's Frame
-//		frame.setUndecorated(true);
+		frame.setUndecorated(true);
 		
 		mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.X_AXIS));
 		mainPanel.add(canvas);
 		
-		gPanel = new GraphPanel();
+		gPanel = new GraphPanel(CANVAS_WIDTH,CANVAS_HEIGHT);
 		
 		gPanel.addKeyListener(renderer);
 		
@@ -218,7 +234,9 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 		frame.setTitle(TITLE);
 		frame.pack();
 
-		//frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+		frame.setSize(CANVAS_WIDTH*2, CANVAS_HEIGHT);
+		
+		frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 
 		frame.setVisible(true);
 		animator.start(); // start the animation loop
@@ -243,14 +261,14 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 	
 		// Read the world
 		try {
-			shader1 = sm.init("/spider", gl);
+			shader1 = sm.init("resources/spider", gl);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
 		
 		// Read the world
 		try {
-			particleShader = sm.init("/particle", gl);
+			particleShader = sm.init("resources/particle", gl);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}		
@@ -268,46 +286,46 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 		water = new ModelControl();
 		
 		try {
-			top.loadModelData("/CustomChipTextured.obj");
+			top.loadModelData("resources/CustomChipTextured.obj");
 		} catch (IOException ex) {
 			Logger.getLogger(MicroSimulation.class.getName()).log(
 					Level.SEVERE, null, ex);
 		}
 		
 		try {
-			syringe.loadModelData("/S+T_Textured.obj");
+			syringe.loadModelData("resources/S+T_Textured.obj");
 		} catch (IOException ex) {
 			Logger.getLogger(MicroSimulation.class.getName()).log(
 					Level.SEVERE, null, ex);
 		}
 		
 		try {
-			tower.loadModelData("/tower_textured_final.obj");
+			tower.loadModelData("resources/tower_textured_final.obj");
 		} catch (IOException ex) {
 			Logger.getLogger(MicroSimulation.class.getName()).log(
 					Level.SEVERE, null, ex);
 		}
 		
 		try {
-			yeast.loadModelData("/YeastTextured2.obj");
+			yeast.loadModelData("resources/YeastTextured2.obj");
 		} catch (IOException ex) {
 			Logger.getLogger(MicroSimulation.class.getName()).log(
 					Level.SEVERE, null, ex);
 		}
 		
 		try {
-			water.loadModelData("/WaterTexturedSheet.obj");
+			water.loadModelData("resources/WaterTexturedSheet.obj");
 		} catch (IOException ex) {
 			Logger.getLogger(MicroSimulation.class.getName()).log(
 					Level.SEVERE, null, ex);
 		}
 		
-		woodTexture = setUp2DText(gl, "/Wood.jpg");
-		chipTexture = setUp2DText(gl, "/chip_texture.png");
-		yeastTexture = setUp2DText(gl, "/YeastTexture.png");
-		waterTexture = setUp2DText(gl, "/WaterTexture.jpg");
-		saltWaterTexture = setUp2DText(gl, "/SaltWaterTexture.png");
-		plasticTexture = setUp2DText(gl, "/Plastic.jpeg");
+		woodTexture = setUp2DText(gl, "resources/Wood.jpg");
+		chipTexture = setUp2DText(gl, "resources/chip_texture.png");
+		yeastTexture = setUp2DText(gl, "resources/YeastTexture.png");
+		waterTexture = setUp2DText(gl, "resources/WaterTexture.jpg");
+		saltWaterTexture = setUp2DText(gl, "resources/SaltWaterTexture.png");
+		plasticTexture = setUp2DText(gl, "resources/Plastic.jpeg");
 		
 		Robot r = null;
 		try {
@@ -328,11 +346,18 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 		frame.setCursor(blankCursor);
 		p_mpos = MouseInfo.getPointerInfo().getLocation();
 		
-		gPanel.originalWidth = gPanel.graph.getWidth();
+		gPanel.originalWidth = CANVAS_WIDTH;
 		gPanel.originalHeight = CANVAS_HEIGHT;
 		
-		canvas.setSize(CANVAS_WIDTH+gPanel.getWidth(),CANVAS_HEIGHT);
+		gPanel.showGraph();
+		System.out.println(CANVAS_WIDTH+gPanel.getSize().getWidth());
+
+		canvas.setSize((int) (CANVAS_WIDTH+gPanel.getSize().getWidth()),CANVAS_HEIGHT);
+		
 		gPanel.hideGraph();
+		
+		
+		
 	}
 
 	float simX = 10.4f, simY = 5.32f, simZ = -.07f;
@@ -474,11 +499,11 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 		gl.glUseProgram(shader1);
 		
 		gl.glBindTexture(GL.GL_TEXTURE_2D, chipTexture);
-		top.drawModel(new flaxapps.Vertex(10.0f,5.0f,0.0f), gl, 0.0f);
+		top.drawModel(new Vertex(10.0f,5.0f,0.0f), gl, 0.0f);
 
 		if(!inSim){
 			gl.glBindTexture(GL.GL_TEXTURE_2D, woodTexture);
-			tower.drawModel(new flaxapps.Vertex(-9.0f,5.0f, 8.5f), gl, 90.0f, 10.0f);
+			tower.drawModel(new Vertex(-9.0f,5.0f, 8.5f), gl, 90.0f, 10.0f);
 			
 			
 //			gl.glBindTexture(GL.GL_TEXTURE_2D, plasticTexture);
@@ -495,11 +520,11 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 			float s = .11f;
 			float prevSim = 5.32f;
 			for(YeastData d : yeastQueue){
-				yeast.drawModel(new flaxapps.Vertex(d.x,prevSim - s,d.y), gl, 0.0f, .002f);
+				yeast.drawModel(new Vertex(d.x,prevSim - s,d.y), gl, 0.0f, .002f);
 			}
 			
 			for(YeastData d : shearingQueue){
-				yeast.drawModel(new flaxapps.Vertex(d.x,prevSim - s,d.y), gl, 0.0f, .002f);
+				yeast.drawModel(new Vertex(d.x,prevSim - s,d.y), gl, 0.0f, .002f);
 				d.y+=0.001;
 				
 				if(d.y > .04){
@@ -523,7 +548,7 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 				float wi = .023f;
 				float num = 16.0f;
 				
-				water.drawModel(new flaxapps.Vertex(simX - wi/2.0f + wi/num,prevSim - s - .028f,simZ + w.y), gl, 0.0f, .025f);
+				water.drawModel(new Vertex(simX - wi/2.0f + wi/num,prevSim - s - .028f,simZ + w.y), gl, 0.0f, .025f);
 				
 				w.y += .001;
 				
@@ -597,9 +622,13 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 		BufferedImage bufferedImage = null;
 		int w = 0;
 		int h = 0;
-		URL u = MicroSimulation.class.getResource(txt);
+//		URL u = MicroSimulation.class.getResource(txt);
+		
+		
+		
 		try {
-			bufferedImage = ImageIO.read(u.openStream());
+			FileInputStream fStream = new FileInputStream(new File(txt));
+			bufferedImage = ImageIO.read(fStream);
 			w = bufferedImage.getWidth();
 			h = bufferedImage.getHeight();
 		} catch (IOException e) {
@@ -614,7 +643,7 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 				DataBuffer.TYPE_BYTE);
 		BufferedImage dukeImg = new BufferedImage(colorModel, raster, false,
 				null);
-	
+		
 		Graphics2D g = dukeImg.createGraphics();
 		g.drawImage(bufferedImage, null, null);
 		DataBufferByte dukeBuf = (DataBufferByte) raster.getDataBuffer();
@@ -687,6 +716,7 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 		Graphics2D g = (Graphics2D) img.getGraphics();
 		g.setColor(component.getForeground());
 		g.setFont(component.getFont());
+		//Q WUZ HERE LOLOLOLOLOL
 		component.paintAll(g);
 		if (region == null) {
 			region = new Rectangle(0, 0, img.getWidth(), img.getHeight());
@@ -699,10 +729,10 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 	 */
 
 	class AABB {
-		flaxapps.Vertex c; // center point
+		Vertex c; // center point
 		float[] r; // halfwidths
 
-		public AABB(float[] ar, flaxapps.Vertex ac) {
+		public AABB(float[] ar, Vertex ac) {
 			c = ac;
 			r = ar;
 		}
@@ -944,15 +974,7 @@ public class MicroSimulation implements GLEventListener, KeyListener {
 		}
 	}
 
-	// A vertex has xyz (location) and uv (for texture) (inner class)
-	class Vertex {
-		float x, y, z; // 3D x,y,z location
-		float u, v; // 2D texture coordinates
-
-		public String toString() {
-			return "(" + x + "," + y + "," + z + ")" + "(" + u + "," + v + ")";
-		}
-	}
+	
 }
 
 class WaterData{
@@ -990,94 +1012,114 @@ class GraphPanel extends JPanel implements ChangeListener, ActionListener{
 	public boolean salt = false;
 	public boolean resets = false;
 	
+	public boolean shown = false;
+	
 	JButton changeButton;
 	JSlider slider;
 	
 	JLabel heightLabel;
 	JLabel yeastLabel;
 	
-	public GraphPanel(){
+	public GraphPanel(int width, int height){
+		originalWidth = width;
+		originalHeight = height;
+		setSize(originalWidth,originalHeight);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-		addGraph();
 	}
 	
 	public void hideGraph(){
-		setSize(0,0);
+		if(shown){
+			setVisible(false);
+		}
 	}
 	
 	public void showGraph(){
-		setSize(originalWidth,originalHeight);
+		
+		setVisible(true);
+		
+		if(!shown){
+			setSize(originalWidth,originalHeight);
+			
+			graph = new ChartPanel(createChart(createDataset()));
+			graph.setSize(originalWidth,originalHeight/2);
+			add(graph);
+			
+			int FPS_MIN = 210;
+			int FPS_MAX = 280;
+			int FPS_INIT = 210;    //initial frames per second
+			
+			add(Box.createRigidArea(new Dimension(0, 40)));
+			
+			add(new JLabel("Water Column Height"));
+			
+			JPanel sliderPanel = new JPanel();
+			
+			sliderPanel.setLayout(new BoxLayout(sliderPanel, BoxLayout.X_AXIS));
+			
+			sliderPanel.add(Box.createRigidArea(new Dimension(20, 0)));
+			
+			slider = new JSlider(JSlider.HORIZONTAL,
+			                                      FPS_MIN, FPS_MAX, FPS_INIT);
+
+			
+			Font font = new Font("Serif", Font.BOLD, 20);
+			
+			
+			Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
+			
+			for(int i = 210; i <=280; i = i + 10){
+				JLabel lbl = new JLabel("" + (float)i/10.0);
+				lbl.setFont(font);
+				labelTable.put( new Integer( i ), lbl );
+			}
+			
+			font = new Font("Serif", Font.BOLD, 35);
+			
+			slider.setLabelTable( labelTable );
+			
+			//Turn on labels at major tick marks.
+			slider.setMajorTickSpacing(1);
+			slider.setMinorTickSpacing(1);
+			slider.setPaintTicks(true);
+			slider.setPaintLabels(true);
+			
+			slider.setFont(font);
+			
+			slider.addChangeListener(this);
+			
+			sliderPanel.add(slider, BorderLayout.CENTER);
+			
+			sliderPanel.add(Box.createRigidArea(new Dimension(20, 0)));
+			
+			
+			add(sliderPanel);
+			
+			changeButton = new JButton("Add Salt");
+			JButton rBut = new JButton("Reset");
+			
+			JPanel checkPanel = new JPanel();
+			checkPanel.add(changeButton, BorderLayout.CENTER);
+			checkPanel.add(rBut, BorderLayout.CENTER);
+			add(checkPanel);
+			
+			yeastLabel = new JLabel();
+			yeastLabel.setFont(font);
+			setYeastLabel(100.0f);
+			heightLabel = new JLabel("Column Height: 21.0 cm");
+//			Font f = new Font();
+			heightLabel.setFont(font);
+			add(yeastLabel);
+			add(heightLabel);
+			
+			add(Box.createRigidArea(new Dimension(0, 50)));
+			
+			changeButton.addActionListener(this);
+			rBut.addActionListener(this);
+			
+			shown = true;
+		}
 	}
 	
-	public void addGraph(){
-		graph = new ChartPanel(createChart(createDataset()));
-		add(graph);
-		
-		int FPS_MIN = 210;
-		int FPS_MAX = 280;
-		int FPS_INIT = 210;    //initial frames per second
-		
-		add(Box.createRigidArea(new Dimension(0, 40)));
-		
-		add(new JLabel("Water Column Height"));
-		
-		JPanel sliderPanel = new JPanel();
-		
-		sliderPanel.setLayout(new BoxLayout(sliderPanel, BoxLayout.X_AXIS));
-		
-		sliderPanel.add(Box.createRigidArea(new Dimension(20, 0)));
-		
-		slider = new JSlider(JSlider.HORIZONTAL,
-		                                      FPS_MIN, FPS_MAX, FPS_INIT);
-
-		
-		Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
-		
-		for(int i = 210; i <=280; i = i + 10){
-			labelTable.put( new Integer( i ), new JLabel("" + (float)i/10.0) );
-		}
-		
-		
-		slider.setLabelTable( labelTable );
-		
-		//Turn on labels at major tick marks.
-		slider.setMajorTickSpacing(1);
-		slider.setMinorTickSpacing(1);
-		slider.setPaintTicks(true);
-		slider.setPaintLabels(true);
-		
-		Font font = new Font("Serif", Font.ITALIC, 15);
-		slider.setFont(font);
-		
-		slider.addChangeListener(this);
-		
-		sliderPanel.add(slider, BorderLayout.CENTER);
-		
-		sliderPanel.add(Box.createRigidArea(new Dimension(20, 0)));
-		
-		
-		add(sliderPanel);
-		
-		changeButton = new JButton("Add Salt");
-		JButton rBut = new JButton("Reset");
-		
-		JPanel checkPanel = new JPanel();
-		checkPanel.add(changeButton, BorderLayout.CENTER);
-		checkPanel.add(rBut, BorderLayout.CENTER);
-		add(checkPanel);
-		
-		yeastLabel = new JLabel();
-		setYeastLabel(100.0f);
-		heightLabel = new JLabel("Column Height: 21.0 cm");
-		
-		add(yeastLabel);
-		add(heightLabel);
-		
-		add(Box.createRigidArea(new Dimension(0, 50)));
-		
-		changeButton.addActionListener(this);
-		rBut.addActionListener(this);
-	}
 	
 	public void changeGraph(){
 		graph.setChart(createChart(createDataset()));
