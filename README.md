@@ -6,3 +6,9 @@ For part of my program during my second semester at The Ohio State University, I
 
 At the start of the application, you can walk around and view 3D models that show parts of the experimental setup. Movement can be controlled using WASD and the mouse. Pressing "G" will switch to the simulation view, where you can see a microscopic view of the chip and the yeast cells sitting inside. From there, you can control water flow, add salinity, and view the yeast shearing.
 
+##Screenshots
+
+![The Chip](https://github.com/dannyflax/Microfluidics-Simulation/blob/master/Screenshots/shot1.png)
+![Tower and chip close](https://github.com/dannyflax/Microfluidics-Simulation/blob/master/Screenshots/shot2.png)
+![Tower and chip far](https://github.com/dannyflax/Microfluidics-Simulation/blob/master/Screenshots/shot4.png)
+![Yeast Shearing Simulation](https://github.com/dannyflax/Microfluidics-Simulation/blob/master/Screenshots/shot3.png)
