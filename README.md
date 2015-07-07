@@ -1,4 +1,4 @@
-##About this project
+##About this project [![Build Status](https://travis-ci.org/dannyflax/Microfluidics-Simulation.svg?branch=master)](https://travis-ci.org/dannyflax/Microfluidics-Simulation)
 This project uses [JOGL](https://www.jogamp.org) and [JOGL Utilities](https://github.com/dannyflax/JOGL-Utilities/).
 
 ##What's going on here?
