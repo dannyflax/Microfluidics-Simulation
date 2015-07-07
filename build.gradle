@@ -1,0 +1,21 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+
+mainClassName = 'flaxapps.micro.MicroSimulation'
+
+repositories {
+    mavenCentral()
+    maven {
+    	url "https://jitpack.io"
+    }
+}
+
+dependencies {
+    compile ('org.jfree:jfreechart:1.0.19','com.github.dannyflax:JOGL-Utilities:1655b84')
+    testCompile 'junit:junit:4.+'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.0'
+}
